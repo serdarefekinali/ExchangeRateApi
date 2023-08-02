@@ -1,0 +1,70 @@
+version: latest
+
+services:
+  postgres:
+    container_name: erapi-db-cnt-yaml
+    image: postgres:14
+    ports:
+      - 5432:5432
+    env_file:
+      - ./er-api/.env
+    volumes:
+      - ./volume:/var/lib/postgresql/data
+    networks:
+      - erapi_net
+    depends_on:
+      - rabbitmq
+  
+  rabbitmq:
+    container_name: erapi-rabbit-cnt-yaml
+    image: rabbitmq:3-management
+    ports:
+      - 5672:5672
+      - 15672:15672
+    env_file:
+      - ./er-api-consumer/.env
+    networks:
+      - erapi_net
+  
+  erapi:
+    container_name: erapi-cnt
+    image: erapi_img
+    ports:
+      - 3000:3000
+    env_file:
+      - ./er-api/.env
+    networks:
+      - erapi_net
+    depends_on:
+      - rabbitmq
+      - postgres
+
+  erapiconsumer:
+    container_name: erapiconsumer-cnt
+    image: erapiconsumer_img
+    env_file:
+      - ./er-api-consumer/.env
+    networks:
+      - erapi_net
+    depends_on:
+      - rabbitmq
+      - postgres
+      - erapi
+
+  errabbitconsumer:
+    container_name: errabbitconsumer-cnt
+    image: errabbitconsumer_img
+    env_file:
+      - ./er-rabbit-consumer/.env
+    networks:
+      - erapi_net
+    depends_on:
+      - rabbitmq
+      - postgres
+      - erapi
+      - erapiconsumer
+
+
+networks:
+  erapi_net:
+    driver: bridge
